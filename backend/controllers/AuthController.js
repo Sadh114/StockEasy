@@ -26,7 +26,7 @@ module.exports.Signup = async (req, res) => {
     const token = createSecretToken(user._id);
     res.cookie("token", token, {
       httpOnly: true,
-      sameSite: "lax",
+      sameSite: isProd ? "none" : "lax",
       secure: isProd,
       domain: getCookieDomain(req),
       maxAge: 3 * 24 * 60 * 60 * 1000,
@@ -65,7 +65,7 @@ module.exports.Login = async (req, res) => {
     const token = createSecretToken(user._id);
     res.cookie("token", token, {
       httpOnly: true,
-      sameSite: "lax",
+      sameSite: isProd ? "none" : "lax",
       secure: isProd,
       domain: getCookieDomain(req),
       maxAge: 3 * 24 * 60 * 60 * 1000,
