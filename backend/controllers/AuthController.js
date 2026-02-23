@@ -19,8 +19,6 @@ const cookieOptions = {
   maxAge: 3 * 24 * 60 * 60 * 1000,
 };
 
-res.cookie("token", token, cookieOptions);
-
 
 module.exports.Signup = async (req, res) => {
   try {
