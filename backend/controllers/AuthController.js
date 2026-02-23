@@ -4,6 +4,14 @@ const bcrypt = require("bcryptjs");
 
 const isProd = process.env.NODE_ENV === "production";
 
+const getCookieDomain = (req) => {
+  const host = req.get('host');
+  if (host && host.includes('onrender.com')) {
+    return '.onrender.com';
+  }
+  return undefined;
+};
+
 module.exports.Signup = async (req, res) => {
   try {
     const { email, password, username } = req.body;
@@ -20,6 +28,7 @@ module.exports.Signup = async (req, res) => {
       httpOnly: true,
       sameSite: "lax",
       secure: isProd,
+      domain: getCookieDomain(req),
       maxAge: 3 * 24 * 60 * 60 * 1000,
     });
     return res.status(201).json({
@@ -58,6 +67,7 @@ module.exports.Login = async (req, res) => {
       httpOnly: true,
       sameSite: "lax",
       secure: isProd,
+      domain: getCookieDomain(req),
       maxAge: 3 * 24 * 60 * 60 * 1000,
     });
     return res.status(200).json({
