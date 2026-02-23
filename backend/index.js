@@ -9,6 +9,7 @@ const authRoute = require("./Routes/AuthRoute");
 const apiRoute = require("./Routes/ApiRoute");
 
 const app = express();
+app.set("trust proxy", 1);
 const port = process.env.PORT || 3002;
 const uri = process.env.MONGO_URL;
 
@@ -20,7 +21,6 @@ mongoose
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:3000,http://localhost:3001")
   .split(",")
   .map((origin) => origin.trim());
-
 
 app.use(
   cors({

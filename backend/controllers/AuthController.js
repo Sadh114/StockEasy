@@ -12,6 +12,16 @@ const getCookieDomain = (req) => {
   return undefined;
 };
 
+const cookieOptions = {
+  httpOnly: true,
+  sameSite: isProd ? "none" : "lax",
+  secure: isProd,
+  maxAge: 3 * 24 * 60 * 60 * 1000,
+};
+
+res.cookie("token", token, cookieOptions);
+
+
 module.exports.Signup = async (req, res) => {
   try {
     const { email, password, username } = req.body;
