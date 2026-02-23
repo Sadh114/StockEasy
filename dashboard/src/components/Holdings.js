@@ -4,6 +4,13 @@ import { VerticalGraph } from "./VerticalGraph";
 
 import { holdings } from "../data/data";
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:3001";
+
+const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true,
+});
+
 const Holdings = () => {
   // start with local data; try fetching from backend and fall back to local if unavailable
   const [holdingsState, setHoldingsState] = useState(holdings);
@@ -11,8 +18,7 @@ const Holdings = () => {
   useEffect(() => {
     const fetchHoldings = async () => {
       try {
-        // change the port to your backend port if different (e.g., 3001 or 3002)
-        const res = await axios.get("http://localhost:3001/holdings");
+        const res = await apiClient.get("/holdings");
         setHoldingsState(res.data);
       } catch (err) {
         console.warn("Holdings API not available, using local data", err);

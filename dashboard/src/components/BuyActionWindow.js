@@ -7,18 +7,29 @@ import GeneralContext from "./GeneralContext";
 
 import "./BuyActionWindow.css";
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:3002";
+
+const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true,
+});
+
 const BuyActionWindow = ({ uid }) => {
   const [stockQuantity, setStockQuantity] = useState(1);
   const [stockPrice, setStockPrice] = useState(0.0);
 
-  const handleBuyClick = () => {
-    axios.post("http://localhost:3002/newOrder", {
-      name: uid,
-      qty: stockQuantity,
-      price: stockPrice,
-      mode: "BUY",
-    });
-    GeneralContext.closeBuyWindow();
+  const handleBuyClick = async () => {
+    try {
+      await apiClient.post("/newOrder", {
+        name: uid,
+        qty: stockQuantity,
+        price: stockPrice,
+        mode: "BUY",
+      });
+      GeneralContext.closeBuyWindow();
+    } catch (error) {
+      console.error("Failed to place order:", error);
+    }
   };
 
   const handleCancelClick = () => {
