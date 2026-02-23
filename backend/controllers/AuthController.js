@@ -5,10 +5,7 @@ const bcrypt = require("bcryptjs");
 const isProd = process.env.NODE_ENV === "production";
 
 const getCookieDomain = (req) => {
-  const host = req.get('host');
-  if (host && host.includes('onrender.com')) {
-    return '.onrender.com';
-  }
+  // Don't set domain restriction to allow cookies across different hosting providers
   return undefined;
 };
 
