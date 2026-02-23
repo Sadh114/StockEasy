@@ -1,0 +1,393 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+.nav-link{
+  margin-left: 40px;
+}
+
+#supportHero{
+  background-color: rgb(56, 126, 209);
+  color: white;
+}
+
+#supportHero a{
+  color: white;
+}
+
+#supportWrapper{
+  display: flex;
+  justify-content: space-between;
+  margin: 0 150px;
+}
+
+#supportHero input{
+  padding: 20px 50px;
+  width: 100%;
+  font-size: 20px;
+  border-radius: 10px;
+  border: none;
+}
+
+.form_container {
+  width: 400px;
+  margin: 50px auto;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  background-color: #f9f9f9;
+}
+
+.form_container h2 {
+  text-align: center;
+}
+
+.form_container form div {
+  margin-bottom: 15px;
+}
+
+.form_container label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.form_container input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.form_container button {
+  width: 100%;
+  padding: 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.form_container button:hover {
+  background-color: #0056b3;
+}
+
+.form_container span {
+  display: block;
+  text-align: center;
+  margin-top: 10px;
+}
+
+.home_page {
+  text-align: center;
+  margin-top: 50px;
+}
+
+.home_page h4 {
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+.home_page button {
+  padding: 10px 20px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.home_page button:hover {
+  background-color: #c82333;
+}
+
+.page-loading {
+  min-height: 40vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  color: #4d5a66;
+}
+
+.trading-shell {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f3f7fc 0%, #f9fbfd 100%);
+}
+
+.trading-header {
+  background: #ffffff;
+  border-bottom: 1px solid #e7edf4;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.brand-logo {
+  text-decoration: none;
+  color: #0b2545;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.trading-nav {
+  display: flex;
+  gap: 10px;
+}
+
+.trade-link {
+  text-decoration: none;
+  color: #3a4a5c;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+.trade-link.active,
+.trade-link:hover {
+  background: #eaf3ff;
+  color: #0b5dc2;
+}
+
+.profile-menu-wrap {
+  position: relative;
+}
+
+.avatar-btn {
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar-chip {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #d8ebff;
+  color: #0b5dc2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.avatar-name {
+  color: #233142;
+  font-weight: 500;
+}
+
+.profile-dropdown {
+  position: absolute;
+  right: 0;
+  top: 44px;
+  background: #fff;
+  border: 1px solid #e0e9f5;
+  border-radius: 10px;
+  padding: 10px;
+  min-width: 220px;
+  box-shadow: 0 14px 30px rgba(20, 40, 80, 0.08);
+}
+
+.profile-row {
+  margin: 0;
+  color: #1f2f46;
+  font-size: 0.95rem;
+}
+
+.profile-row.muted {
+  color: #6f8099;
+  font-size: 0.82rem;
+  margin-bottom: 8px;
+}
+
+.profile-action {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: #27364d;
+  text-decoration: none;
+  display: block;
+  padding: 8px 6px;
+  border-radius: 6px;
+}
+
+.profile-action:hover {
+  background: #f1f6fd;
+}
+
+.profile-action.danger {
+  color: #bf1e2e;
+}
+
+.trading-content {
+  padding: 18px;
+}
+
+.grid-layout {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
+.panel-card {
+  background: #fff;
+  border: 1px solid #e6edf6;
+  border-radius: 12px;
+  padding: 16px;
+  grid-column: span 12;
+}
+
+.panel-card.error,
+.error {
+  color: #c01f2f;
+}
+
+.kpi-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.kpi-grid article h4 {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #68819f;
+}
+
+.kpi-grid article p {
+  margin: 8px 0 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #123358;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-wrap th,
+.table-wrap td {
+  text-align: left;
+  padding: 10px;
+  border-bottom: 1px solid #edf2f8;
+  white-space: nowrap;
+}
+
+.profit {
+  color: #0f8f43;
+}
+
+.loss {
+  color: #cc2b36;
+}
+
+.form-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.form-grid label {
+  color: #475d79;
+  font-size: 0.86rem;
+}
+
+.form-grid input,
+.form-grid select,
+.trade-symbol-bar input {
+  width: 100%;
+  border: 1px solid #ccd8e6;
+  border-radius: 8px;
+  padding: 10px;
+  margin-top: 6px;
+}
+
+.btn-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.btn-solid {
+  border: none;
+  color: #fff;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-weight: 600;
+}
+
+.btn-solid.buy {
+  background: #0b7a75;
+}
+
+.btn-solid.sell {
+  background: #c23b22;
+}
+
+.btn-solid:disabled {
+  opacity: 0.65;
+}
+
+.trade-symbol-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.trade-symbol-bar button {
+  border: none;
+  background: #0b5dc2;
+  color: #fff;
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.line-chart {
+  width: 100%;
+  height: 220px;
+  background: linear-gradient(180deg, #ebf7f7 0%, #ffffff 100%);
+  border-radius: 10px;
+  margin-top: 10px;
+}
+
+.muted {
+  color: #70839d;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 991px) {
+  .trading-header {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
