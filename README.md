@@ -243,24 +243,42 @@ The application is configured for deployment on Render with:
 
 <img width="1919" height="963" alt="image" src="https://github.com/user-attachments/assets/05a33c7e-ffe6-4d76-999a-db20ceb90521" />
 
+-
 
 <img width="1919" height="962" alt="image" src="https://github.com/user-attachments/assets/fd9f1287-fa31-4d8f-bf8d-2c51a44ec0ad" />
 
+-
+
 <img width="1919" height="910" alt="image" src="https://github.com/user-attachments/assets/1d9da0ad-8541-4a2f-ac83-a7ee5458dd18" />
+
+-
 
 <img width="1919" height="966" alt="image" src="https://github.com/user-attachments/assets/a272b047-2363-490f-ab5b-0ab3a694b365" />
 
+-
+
 <img width="1919" height="967" alt="image" src="https://github.com/user-attachments/assets/cd0d460f-c920-499e-bc0f-213ea173dd8c" />
+
+-
 
 <img width="1918" height="966" alt="image" src="https://github.com/user-attachments/assets/1c049111-de54-465c-b457-338d15d78b78" />
 
+-
+
 <img width="1917" height="973" alt="image" src="https://github.com/user-attachments/assets/51171534-f981-43c8-a8fb-7cf96b7a2547" />
+
+-
 
 <img width="1919" height="958" alt="image" src="https://github.com/user-attachments/assets/ab1cdc2c-59c5-480c-bb7b-601797d926d1" />
 
+-
+
 <img width="1919" height="905" alt="image" src="https://github.com/user-attachments/assets/913bbc81-dbdf-401e-bca6-a0a20a5110eb" />
 
+-
+
 <img width="1919" height="941" alt="image" src="https://github.com/user-attachments/assets/cf59a34a-b23b-41c5-8e81-92a4b043429b" />
+
 
 
 
