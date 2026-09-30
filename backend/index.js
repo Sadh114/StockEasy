@@ -7,6 +7,9 @@ const cookieParser = require("cookie-parser");
 
 const authRoute = require("./Routes/AuthRoute");
 const apiRoute = require("./Routes/ApiRoute");
+const { WatchlistModel } = require("./model/WatchlistModel");
+const { PendingOrderModel } = require("./model/PendingOrderModel");
+const { checkPendingOrdersForUser } = require("./controllers/TradingController");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -15,8 +18,28 @@ const uri = process.env.MONGO_URL;
 
 mongoose
   .connect(uri)
-  .then(() => console.log("MongoDB connected successfully"))
+  .then(async () => {
+    console.log("MongoDB connected successfully");
+    // Adds the new folderId-aware unique index and drops the old one now
+    // that WatchlistSchema supports multiple lists per stock.
+    await WatchlistModel.syncIndexes();
+  })
   .catch((err) => console.error("MongoDB connection failed", err));
+
+// Periodic sweep for limit/stop-loss orders, so they still trigger even if
+// no one is actively browsing the site. Dashboard/market-data requests also
+// trigger an opportunistic check for immediate responsiveness while in use.
+const PENDING_ORDER_SWEEP_INTERVAL_MS = 30 * 1000;
+setInterval(async () => {
+  try {
+    const userIds = await PendingOrderModel.distinct("userId", { status: "ACTIVE" });
+    for (const userId of userIds) {
+      await checkPendingOrdersForUser(userId);
+    }
+  } catch (error) {
+    console.error("[PENDING ORDER] Sweep failed", error.message);
+  }
+}, PENDING_ORDER_SWEEP_INTERVAL_MS);
 
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:3000,http://localhost:3001")
   .split(",")

@@ -346,6 +346,10 @@ code {
   background: #c23b22;
 }
 
+.btn-solid.primary {
+  background: #1a73e8;
+}
+
 .btn-solid:disabled {
   opacity: 0.65;
 }

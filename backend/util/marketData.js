@@ -86,6 +86,19 @@ const buildIntradayCandles = (symbol, basePrice) => {
   return { candles, livePrice };
 };
 
+// A few companies are almost never referred to by their full legal name in
+// news headlines (e.g. "State Bank of India" is always "SBI" in practice).
+// Used only for building news search queries, not for display.
+const NEWS_SEARCH_ALIASES = {
+  SBIN: "SBI",
+  M_M: "M&M",
+};
+
+const getNewsSearchTerm = (symbolInput) => {
+  const symbol = normalizeSymbol(symbolInput);
+  return NEWS_SEARCH_ALIASES[symbol] || MARKET_DATA[symbol]?.companyName || symbol;
+};
+
 const getMarketSymbols = () =>
   Object.entries(MARKET_DATA)
     .map(([symbol, info]) => ({
@@ -112,12 +125,23 @@ const getMarketSnapshot = (symbolInput) => {
   const sma20 = closes.slice(-20).reduce((sum, value) => sum + value, 0) / Math.min(20, closes.length || 1);
   const emaFactor = 2 / (Math.min(20, closes.length) + 1);
   const ema20 = closes.reduce((ema, value) => ema + emaFactor * (value - ema), closes[0] || livePrice);
+  const dayHigh = Math.max(...candles.map((c) => c.high));
+  const dayLow = Math.min(...candles.map((c) => c.low));
+  const previousClose = Number(dayOpen.toFixed(2));
 
   return {
     symbol,
     companyName: base.companyName,
     livePrice,
     changePct,
+    previousClose,
+    dayOpen: Number(dayOpen.toFixed(2)),
+    dayHigh: Number(dayHigh.toFixed(2)),
+    dayLow: Number(dayLow.toFixed(2)),
+    fiftyTwoWeekHigh: Number((base.price * 1.32).toFixed(2)),
+    fiftyTwoWeekLow: Number((base.price * 0.72).toFixed(2)),
+    dividendRate: null,
+    asOf: new Date().toISOString(),
     orderBook: {
       bid: [{ price: bid, quantity: 120 }, { price: Number((bid - 0.1).toFixed(2)), quantity: 80 }],
       ask: [{ price: ask, quantity: 110 }, { price: Number((ask + 0.1).toFixed(2)), quantity: 95 }],
@@ -136,4 +160,56 @@ const getMarketSnapshot = (symbolInput) => {
   };
 };
 
-module.exports = { getMarketSnapshot, normalizeSymbol, getMarketSymbols };
+// Deterministic simulated fallback for multi-timeframe charts (5D/1M/6M/...).
+// Walks backward from a known end price (the current live or simulated
+// price) so the chart always ends exactly where the header price says,
+// keeping the UI internally consistent even when Yahoo Finance is
+// unavailable for a symbol/range.
+const buildWalkCandles = (symbol, endPrice, pointCount, volatility) => {
+  const seed = symbol.split("").reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+  const closes = new Array(pointCount);
+  closes[pointCount - 1] = endPrice;
+  for (let i = pointCount - 2; i >= 0; i -= 1) {
+    const shock = (seededUnit(seed + 7, i) - 0.5) * volatility;
+    const drift = Math.sin((seed + i) / 17) * volatility * 0.3;
+    closes[i] = Math.max(0.5, closes[i + 1] / (1 + shock + drift));
+  }
+  return closes.map((close) => Number(close.toFixed(2)));
+};
+
+const RANGE_CONFIG = {
+  "1D": { points: 36, volatility: 0.0018 },
+  "5D": { points: 65, volatility: 0.0022 },
+  "1M": { points: 22, volatility: 0.006 },
+  "6M": { points: 130, volatility: 0.006 },
+  YTD: { points: 180, volatility: 0.006 },
+  "1Y": { points: 252, volatility: 0.006 },
+  "5Y": { points: 260, volatility: 0.012 },
+  MAX: { points: 120, volatility: 0.02 },
+};
+
+const buildSimulatedRangeCandles = (symbolInput, endPrice, rangeKey) => {
+  const symbol = normalizeSymbol(symbolInput);
+  const config = RANGE_CONFIG[rangeKey] || RANGE_CONFIG["1D"];
+  const closes = buildWalkCandles(symbol, endPrice, config.points, config.volatility);
+  return closes.map((close, idx) => {
+    const prevClose = idx > 0 ? closes[idx - 1] : close;
+    return {
+      time: String(idx),
+      open: prevClose,
+      high: Math.max(prevClose, close),
+      low: Math.min(prevClose, close),
+      close,
+      price: close,
+      volume: 0,
+    };
+  });
+};
+
+module.exports = {
+  getMarketSnapshot,
+  normalizeSymbol,
+  getMarketSymbols,
+  getNewsSearchTerm,
+  buildSimulatedRangeCandles,
+};

@@ -9,210 +9,103 @@ const defaultSymbol = "INFY";
 
 const money = (value) => `INR ${Number(value || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 
-const CandlestickChart = ({ points }) => {
-  if (!points?.length) {
+const CHART_RANGES = ["1D", "5D", "1M", "6M", "YTD", "1Y", "5Y", "MAX"];
+
+// Google-Finance-style line/area price chart: smooth line, gradient fill,
+// hover crosshair with a price+time tooltip, and a dashed previous-close
+// reference line (shown only on the 1D view, matching real stock pages).
+const PriceLineChart = ({ candles, isUp, previousClose, range }) => {
+  const [hoverIdx, setHoverIdx] = useState(null);
+
+  if (!candles?.length) {
     return <div className="chart-empty">No chart data</div>;
   }
 
-  const candles = points.map((point, idx) => {
-    const prevClose = idx > 0 ? Number(points[idx - 1].close ?? points[idx - 1].price) : Number(point.price || 0);
-    const open = Number(point.open ?? prevClose);
-    const close = Number(point.close ?? point.price ?? open);
-    const high = Number(point.high ?? Math.max(open, close));
-    const low = Number(point.low ?? Math.min(open, close));
-
-    return {
-      open,
-      high,
-      low,
-      close,
-      time: point.time,
-      isGreen: close >= open,
-      volume: Number(point.volume ?? 0),
-    };
-  });
-
-  const allPrices = candles.flatMap((candle) => [candle.open, candle.high, candle.low, candle.close]);
-  const min = Math.min(...allPrices);
-  const max = Math.max(...allPrices);
+  const closes = candles.map((c) => Number(c.close ?? c.price));
+  const values = previousClose && range === "1D" ? [...closes, previousClose] : closes;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
   const spread = max - min || 1;
+  const pad = spread * 0.08;
 
-  const chartWidth = 100;
-  const chartHeight = 86;
-  const totalHeight = chartHeight;
-  const candleWidth = Math.max(1.2, Math.min(4.5, (chartWidth / candles.length) * 0.7));
-  const wickWidth = Math.max(0.25, candleWidth * 0.12);
-  const lastCandle = candles[candles.length - 1];
-  const lastCloseY = totalHeight - ((lastCandle.close - min) / spread) * chartHeight;
+  const W = 100;
+  const H = 60;
+  const toX = (idx) => (idx / (closes.length - 1 || 1)) * W;
+  const toY = (value) => H - ((value - (min - pad)) / (spread + pad * 2)) * H;
+
+  const linePath = closes.map((v, i) => `${i === 0 ? "M" : "L"} ${toX(i).toFixed(2)} ${toY(v).toFixed(2)}`).join(" ");
+  const areaPath = `${linePath} L ${toX(closes.length - 1).toFixed(2)} ${H} L 0 ${H} Z`;
+
+  const lineColor = isUp ? "#0b8043" : "#c5221f";
+  const fillId = isUp ? "priceFillUp" : "priceFillDown";
+
+  const handleMove = (event) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const ratio = (event.clientX - rect.left) / rect.width;
+    const idx = Math.round(ratio * (closes.length - 1));
+    setHoverIdx(Math.max(0, Math.min(closes.length - 1, idx)));
+  };
+
+  const hovered = hoverIdx != null ? candles[hoverIdx] : null;
+  const hoverX = hoverIdx != null ? toX(hoverIdx) : null;
+  const hoverY = hoverIdx != null ? toY(closes[hoverIdx]) : null;
+  const prevCloseY = previousClose ? toY(previousClose) : null;
 
   return (
-    <div
-      style={{
-        width: "100%",
-        height: "320px",
-        background: "#f5f6f8",
-        borderRadius: "8px",
-        padding: "12px",
-        border: "1px solid #d9dee6",
-      }}
-    >
-      <div
-        style={{
-          color: "#4b5563",
-          fontSize: "0.9em",
-          fontWeight: "600",
-          marginBottom: "10px",
-          textAlign: "left",
-        }}
-      >
-        Candlestick Chart
-      </div>
-
+    <div style={{ width: "100%" }}>
       <svg
-        viewBox={`0 0 ${chartWidth} ${totalHeight}`}
-        style={{
-          width: "100%",
-          height: "236px",
-          background: "#f5f6f8",
-        }}
+        viewBox={`0 0 ${W} ${H}`}
+        preserveAspectRatio="none"
+        style={{ width: "100%", height: "260px", cursor: "crosshair" }}
+        onMouseMove={handleMove}
+        onMouseLeave={() => setHoverIdx(null)}
       >
-        {[0.16, 0.32, 0.48, 0.64, 0.8].map((level) => {
-          const price = min + spread * level;
-          return (
-            <g key={level}>
-              <line
-                x1="0"
-                y1={totalHeight - level * chartHeight}
-                x2={chartWidth}
-                y2={totalHeight - level * chartHeight}
-                stroke="#e2e7ef"
-                strokeWidth="0.4"
-              />
-              <text
-                x={chartWidth - 1}
-                y={totalHeight - level * chartHeight - 0.8}
-                fontSize="2"
-                fill="#8a93a2"
-                textAnchor="end"
-              >
-                INR {price.toFixed(0)}
-              </text>
-            </g>
-          );
-        })}
+        <defs>
+          <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={lineColor} stopOpacity="0.25" />
+            <stop offset="100%" stopColor={lineColor} stopOpacity="0" />
+          </linearGradient>
+        </defs>
 
-        {[0.25, 0.5, 0.75].map((xLevel) => (
-          <line
-            key={xLevel}
-            x1={chartWidth * xLevel}
-            y1="0"
-            x2={chartWidth * xLevel}
-            y2={totalHeight}
-            stroke="#e2e7ef"
-            strokeWidth="0.35"
-          />
+        {[0.2, 0.4, 0.6, 0.8].map((level) => (
+          <line key={level} x1="0" y1={H * level} x2={W} y2={H * level} stroke="#e8eaed" strokeWidth="0.3" />
         ))}
 
-        <line
-          x1="0"
-          y1={lastCloseY}
-          x2={chartWidth}
-          y2={lastCloseY}
-          stroke="#e65e5e"
-          strokeWidth="0.35"
-          strokeDasharray="0.8 1"
-        />
+        <path d={areaPath} fill={`url(#${fillId})`} stroke="none" />
+        <path d={linePath} fill="none" stroke={lineColor} strokeWidth="0.6" vectorEffect="non-scaling-stroke" />
 
-        {candles.map((candle, idx) => {
-          const x = (idx / (candles.length - 1 || 1)) * (chartWidth - candleWidth) + candleWidth / 2;
-          const openY = totalHeight - ((candle.open - min) / spread) * chartHeight;
-          const closeY = totalHeight - ((candle.close - min) / spread) * chartHeight;
-          const highY = totalHeight - ((candle.high - min) / spread) * chartHeight;
-          const lowY = totalHeight - ((candle.low - min) / spread) * chartHeight;
-          const bodyHeight = Math.max(0.8, Math.abs(closeY - openY));
-          const bodyY = Math.min(openY, closeY);
-          const upColor = "#4fa79f";
-          const downColor = "#df5d57";
-          const bodyColor = candle.isGreen ? upColor : downColor;
+        {prevCloseY != null && range === "1D" ? (
+          <line x1="0" y1={prevCloseY} x2={W} y2={prevCloseY} stroke="#9aa0a6" strokeWidth="0.3" strokeDasharray="1 1" />
+        ) : null}
 
-          return (
-            <g key={idx}>
-              <line
-                x1={x}
-                y1={highY}
-                x2={x}
-                y2={lowY}
-                stroke={bodyColor}
-                strokeWidth={wickWidth}
-                strokeLinecap="square"
-              />
-
-              <rect
-                x={x - candleWidth / 2}
-                y={bodyY}
-                width={candleWidth}
-                height={bodyHeight}
-                fill={bodyColor}
-                stroke={bodyColor}
-                strokeWidth="0.18"
-              />
-
-              {Math.abs(openY - closeY) < 1 && (
-                <line
-                  x1={x - candleWidth / 3}
-                  y1={openY}
-                  x2={x + candleWidth / 3}
-                  y2={closeY}
-                  stroke={bodyColor}
-                  strokeWidth="0.8"
-                  strokeLinecap="square"
-                />
-              )}
-            </g>
-          );
-        })}
+        {hoverX != null ? (
+          <>
+            <line x1={hoverX} y1="0" x2={hoverX} y2={H} stroke="#9aa0a6" strokeWidth="0.3" strokeDasharray="1 1" />
+            <circle cx={hoverX} cy={hoverY} r="1" fill={lineColor} stroke="white" strokeWidth="0.3" />
+          </>
+        ) : null}
       </svg>
 
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          marginTop: "10px",
-          padding: "8px",
-          background: "#eef1f6",
-          borderRadius: "4px",
-          fontSize: "0.78em",
-          fontFamily: "monospace",
-        }}
-      >
-        <div style={{ marginRight: "15px" }}>
-          <span style={{ color: "#666" }}>O:</span>
-          <span style={{ color: "#333", fontWeight: "bold" }}> INR {lastCandle?.open.toFixed(2)}</span>
-        </div>
-        <div style={{ marginRight: "15px" }}>
-          <span style={{ color: "#666" }}>H:</span>
-          <span style={{ color: "#4caf50", fontWeight: "bold" }}> INR {lastCandle?.high.toFixed(2)}</span>
-        </div>
-        <div style={{ marginRight: "15px" }}>
-          <span style={{ color: "#666" }}>L:</span>
-          <span style={{ color: "#f44336", fontWeight: "bold" }}> INR {lastCandle?.low.toFixed(2)}</span>
-        </div>
-        <div>
-          <span style={{ color: "#666" }}>C:</span>
+      {hovered ? (
+        <div style={{ textAlign: "center", fontSize: "0.85em", marginTop: "4px" }}>
           <span
             style={{
-              color: lastCandle?.isGreen ? "#4caf50" : "#f44336",
-              fontWeight: "bold",
+              background: "#fff",
+              border: "1px solid #dadce0",
+              borderRadius: "4px",
+              padding: "4px 10px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
             }}
           >
-            {" "}
-            INR {lastCandle?.close.toFixed(2)}
+            {money(Number(hovered.close ?? hovered.price).toFixed(2))} &nbsp;
+            <span className="muted">{hovered.time}</span>
           </span>
         </div>
-      </div>
-
-      <div style={{ marginTop: "6px", fontSize: "0.72em", color: "#7b8491" }}></div>
+      ) : previousClose && range === "1D" ? (
+        <div style={{ textAlign: "right", fontSize: "0.78em", color: "#9aa0a6", marginTop: "-14px", marginRight: "4px" }}>
+          Previous close {previousClose}
+        </div>
+      ) : null}
     </div>
   );
 };
@@ -228,6 +121,69 @@ const TradingPage = () => {
   const [price, setPrice] = useState("");
   const [placingOrder, setPlacingOrder] = useState(false);
   const [pendingOrders, setPendingOrders] = useState([]);
+
+  const [range, setRange] = useState("1D");
+  const [historyCandles, setHistoryCandles] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [following, setFollowing] = useState(false);
+
+  const [triggerType, setTriggerType] = useState("BUY");
+  const [triggerCategory, setTriggerCategory] = useState("LIMIT");
+  const [triggerQuantity, setTriggerQuantity] = useState(1);
+  const [triggerPrice, setTriggerPrice] = useState("");
+  const [placingTriggerOrder, setPlacingTriggerOrder] = useState(false);
+  const [activeTriggerOrders, setActiveTriggerOrders] = useState([]);
+
+  const loadPendingTriggerOrders = async () => {
+    try {
+      const { data } = await apiClient.get("/api/orders/pending");
+      if (data?.success) {
+        setActiveTriggerOrders(data.data.filter((item) => item.status === "ACTIVE"));
+      }
+    } catch (_err) {
+      // Non-critical, leave list as-is.
+    }
+  };
+
+  useEffect(() => {
+    loadPendingTriggerOrders();
+  }, []);
+
+  const submitTriggerOrder = async () => {
+    setPlacingTriggerOrder(true);
+    try {
+      const { data } = await apiClient.post("/api/orders/pending", {
+        symbol,
+        type: triggerType,
+        orderCategory: triggerCategory,
+        quantity: Number(triggerQuantity),
+        triggerPrice: Number(triggerPrice),
+      });
+      if (!data?.success) {
+        toast.error(data?.message || "Unable to place order.");
+        return;
+      }
+      toast.success(data.message);
+      setTriggerPrice("");
+      loadPendingTriggerOrders();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Unable to place order.");
+    } finally {
+      setPlacingTriggerOrder(false);
+    }
+  };
+
+  const cancelTriggerOrder = async (id) => {
+    try {
+      const { data } = await apiClient.delete(`/api/orders/pending/${id}`);
+      if (data?.success) {
+        toast.success("Order cancelled.");
+        loadPendingTriggerOrders();
+      }
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Unable to cancel order.");
+    }
+  };
 
   const loadMarket = async (selectedSymbol) => {
     setLoadingMarket(true);
@@ -267,6 +223,52 @@ const TradingPage = () => {
     const interval = setInterval(() => loadMarket(symbol), 8000);
     return () => clearInterval(interval);
   }, [symbol]);
+
+  useEffect(() => {
+    setFollowing(false);
+  }, [symbol]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadHistory = async () => {
+      setHistoryLoading(true);
+      try {
+        const { data } = await apiClient.get(`/api/market/${symbol}/history`, { params: { range } });
+        if (!cancelled && data?.success) {
+          setHistoryCandles(data.data.candles);
+        }
+      } catch (_err) {
+        if (!cancelled) {
+          setHistoryCandles([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setHistoryLoading(false);
+        }
+      }
+    };
+
+    loadHistory();
+    const interval = range === "1D" ? setInterval(loadHistory, 8000) : null;
+    return () => {
+      cancelled = true;
+      if (interval) clearInterval(interval);
+    };
+  }, [symbol, range]);
+
+  const handleFollow = async () => {
+    try {
+      const { data } = await apiClient.post("/api/watchlist", { symbol });
+      if (data?.success) {
+        setFollowing(true);
+        toast.success(`${symbol} added to your watchlist.`);
+      } else {
+        toast.error(data?.message || "Unable to follow this stock.");
+      }
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Unable to follow this stock.");
+    }
+  };
 
   const changePctClass = useMemo(() => {
     if (!market) {
@@ -330,7 +332,10 @@ const TradingPage = () => {
       setPendingOrders((prev) =>
         prev.map((item) => (item.id === optimisticId ? { ...item, status: "EXECUTED" } : item))
       );
-      toast.success(data.message || "Order executed.");
+      const chargesMsg = data?.data?.charges
+        ? ` Charges: ${money(data.data.charges.totalCharges)}. Net ${type === "BUY" ? "debited" : "credited"}: ${money(data.data.netAmount)}.`
+        : "";
+      toast.success((data.message || "Order executed.") + chargesMsg);
     } catch (err) {
       setPendingOrders((prev) => prev.filter((item) => item.id !== optimisticId));
       toast.error(err?.response?.data?.message || "Trade execution failed.");
@@ -376,38 +381,149 @@ const TradingPage = () => {
         {marketError ? <p className="error">{marketError}</p> : null}
         {market ? (
           <div>
-            <h3>
-              {market.companyName} ({market.symbol})
-            </h3>
-            <p>
-              <strong>{money(market.livePrice)}</strong> <span className={changePctClass}>{market.changePct}%</span>
-            </p>
-            <div style={{ gridColumn: "span 4", marginBottom: "20px" }}>
-              <div
-                style={{
-                  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                  color: "white",
-                  padding: "20px",
-                  borderRadius: "12px",
-                  marginBottom: "16px",
-                  textAlign: "center",
-                }}
-              >
-                <h2 style={{ margin: "0", fontSize: "1.8em" }}>AI Analysis Dashboard</h2>
-                <p style={{ margin: "8px 0 0 0", opacity: "0.9" }}>Real-time insights powered by advanced algorithms</p>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "12px" }}>
+              <div>
+                <h3 style={{ margin: "0 0 4px 0" }}>
+                  {market.companyName} ({market.symbol})
+                </h3>
+                <div style={{ display: "flex", alignItems: "baseline", gap: "10px", flexWrap: "wrap" }}>
+                  <span style={{ fontSize: "2em", fontWeight: 600 }}>{money(market.livePrice)}</span>
+                  <span
+                    className={changePctClass}
+                    style={{
+                      padding: "3px 10px",
+                      borderRadius: "999px",
+                      fontWeight: 600,
+                      background: market.changePct >= 0 ? "#e6f4ea" : "#fce8e6",
+                    }}
+                  >
+                    {market.changePct >= 0 ? "▲" : "▼"} {Math.abs(market.changePct)}%
+                  </span>
+                  <span className={changePctClass}>
+                    {market.changePct >= 0 ? "+" : ""}
+                    {money((market.livePrice - (market.previousClose ?? market.livePrice)).toFixed(2))} today
+                  </span>
+                </div>
+                <p className="muted" style={{ fontSize: "0.85em", margin: "6px 0 0 0" }}>
+                  {market.asOf ? new Date(market.asOf).toLocaleString("en-IN") : ""} IST &middot;{" "}
+                  {market.source === "live" ? "🟢 Live NSE price via Yahoo Finance" : "🟡 Simulated (live data unavailable)"}
+                </p>
               </div>
-              <RecommendationPanel symbol={symbol} />
+              <button type="button" className="btn-solid primary" disabled={following} onClick={handleFollow}>
+                {following ? "✓ Following" : "+ Follow"}
+              </button>
             </div>
-            <div style={{ gridColumn: "span 4" }}>
-              <SentimentCard symbol={symbol} />
+
+            <div className="btn-row" style={{ marginTop: "16px", gap: "4px" }}>
+              {CHART_RANGES.map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => setRange(r)}
+                  style={{
+                    border: "none",
+                    background: "none",
+                    padding: "6px 10px",
+                    borderBottom: range === r ? "2px solid #1a73e8" : "2px solid transparent",
+                    color: range === r ? "#1a73e8" : "#5f6368",
+                    fontWeight: range === r ? 600 : 400,
+                    cursor: "pointer",
+                  }}
+                >
+                  {r}
+                </button>
+              ))}
             </div>
-            <div style={{ gridColumn: "span 4" }}>
-              <FundamentalsMeter symbol={symbol} />
+
+            {historyLoading && !historyCandles.length ? (
+              <p>Loading chart...</p>
+            ) : (
+              <PriceLineChart
+                candles={historyCandles}
+                isUp={market.changePct >= 0}
+                previousClose={market.previousClose}
+                range={range}
+              />
+            )}
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+                gap: "10px",
+                marginTop: "18px",
+                paddingTop: "14px",
+                borderTop: "1px solid #e8eaed",
+                fontSize: "0.9em",
+              }}
+            >
+              <div>
+                <p className="muted" style={{ margin: 0 }}>Open</p>
+                <p style={{ margin: 0 }}>{market.dayOpen ?? "-"}</p>
+              </div>
+              <div>
+                <p className="muted" style={{ margin: 0 }}>High</p>
+                <p style={{ margin: 0 }}>{market.dayHigh ?? "-"}</p>
+              </div>
+              <div>
+                <p className="muted" style={{ margin: 0 }}>Low</p>
+                <p style={{ margin: 0 }}>{market.dayLow ?? "-"}</p>
+              </div>
+              <div>
+                <p className="muted" style={{ margin: 0 }}>Mkt Cap</p>
+                <p style={{ margin: 0 }}>{money((market.fundamentals?.marketCapCr || 0) * 10000000)}</p>
+              </div>
+              <div>
+                <p className="muted" style={{ margin: 0 }}>P/E Ratio</p>
+                <p style={{ margin: 0 }}>{market.fundamentals?.pe || "-"}</p>
+              </div>
+              <div>
+                <p className="muted" style={{ margin: 0 }}>52-wk High</p>
+                <p style={{ margin: 0 }}>{market.fiftyTwoWeekHigh ?? "-"}</p>
+              </div>
+              <div>
+                <p className="muted" style={{ margin: 0 }}>Dividend</p>
+                <p style={{ margin: 0 }}>{market.dividendRate ? money(market.dividendRate) : "-"}</p>
+              </div>
+              <div>
+                <p className="muted" style={{ margin: 0 }}>EPS</p>
+                <p style={{ margin: 0 }}>{market.fundamentals?.eps ?? "-"}</p>
+              </div>
+              <div>
+                <p className="muted" style={{ margin: 0 }}>52-wk Low</p>
+                <p style={{ margin: 0 }}>{market.fiftyTwoWeekLow ?? "-"}</p>
+              </div>
             </div>
-            <CandlestickChart points={market.historical} />
           </div>
         ) : null}
       </section>
+
+      {market ? (
+        <>
+          <section className="panel-card">
+            <div
+              style={{
+                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                color: "white",
+                padding: "20px",
+                borderRadius: "12px",
+                marginBottom: "16px",
+                textAlign: "center",
+              }}
+            >
+              <h2 style={{ margin: "0", fontSize: "1.8em" }}>AI Analysis Dashboard</h2>
+              <p style={{ margin: "8px 0 0 0", opacity: "0.9" }}>Real-time insights powered by advanced algorithms</p>
+            </div>
+            <RecommendationPanel symbol={symbol} />
+          </section>
+          <section className="panel-card">
+            <SentimentCard symbol={symbol} />
+          </section>
+          <section className="panel-card">
+            <FundamentalsMeter symbol={symbol} />
+          </section>
+        </>
+      ) : null}
 
       <section className="panel-card">
         <h3>Place Order</h3>
@@ -430,6 +546,90 @@ const TradingPage = () => {
           </button>
         </div>
         <p className="muted">Orders are applied optimistically and rolled back if API fails.</p>
+      </section>
+
+      <section className="panel-card">
+        <h3>Limit / Stop-Loss Order</h3>
+        <p className="muted" style={{ fontSize: "0.85em" }}>
+          Placed for {symbol}. Runs automatically in the background and executes at the live market price once triggered.
+        </p>
+        <div className="form-grid">
+          <label>
+            Type
+            <select value={triggerType} onChange={(e) => setTriggerType(e.target.value)}>
+              <option value="BUY">BUY</option>
+              <option value="SELL">SELL</option>
+            </select>
+          </label>
+          <label>
+            Category
+            <select value={triggerCategory} onChange={(e) => setTriggerCategory(e.target.value)}>
+              <option value="LIMIT">Limit</option>
+              <option value="STOP_LOSS" disabled={triggerType !== "SELL"}>
+                Stop-Loss (SELL only)
+              </option>
+            </select>
+          </label>
+          <label>
+            Quantity
+            <input
+              type="number"
+              min={1}
+              value={triggerQuantity}
+              onChange={(e) => setTriggerQuantity(Number(e.target.value))}
+            />
+          </label>
+          <label>
+            Trigger Price
+            <input
+              type="number"
+              min={0.01}
+              step="0.01"
+              value={triggerPrice}
+              onChange={(e) => setTriggerPrice(e.target.value)}
+            />
+          </label>
+        </div>
+        <div className="btn-row">
+          <button className="btn-solid primary" disabled={placingTriggerOrder || !triggerPrice} type="button" onClick={submitTriggerOrder}>
+            Place Order
+          </button>
+        </div>
+
+        {activeTriggerOrders.length ? (
+          <div className="table-wrap" style={{ marginTop: "12px" }}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Category</th>
+                  <th>Stock</th>
+                  <th>Qty</th>
+                  <th>Trigger</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {activeTriggerOrders.map((order) => (
+                  <tr key={order._id}>
+                    <td className={order.type === "BUY" ? "profit" : "loss"}>{order.type}</td>
+                    <td>{order.orderCategory === "LIMIT" ? "Limit" : "Stop-Loss"}</td>
+                    <td>{order.symbol}</td>
+                    <td>{order.quantity}</td>
+                    <td>{money(order.triggerPrice)}</td>
+                    <td>
+                      <button type="button" className="btn-solid sell" onClick={() => cancelTriggerOrder(order._id)}>
+                        Cancel
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="muted">No active limit/stop-loss orders.</p>
+        )}
       </section>
 
       <section className="panel-card">

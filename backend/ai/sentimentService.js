@@ -1,6 +1,7 @@
 const axios = require('axios');
 const OpenAI = require('openai');
 const NodeCache = require('node-cache');
+const { getNewsSearchTerm } = require('../util/marketData');
 
 // Initialize cache with 10 minutes TTL
 const cache = new NodeCache({ stdTTL: 600 });
@@ -19,15 +20,21 @@ const getOpenAIClient = () => {
  * @param {string} symbol - Stock symbol (e.g., 'RELIANCE')
  * @returns {Promise<string[]>} Array of news headlines
  */
+// Restricting to established financial-news outlets avoids false matches on
+// short/ambiguous tickers (e.g. "ITC" is also a US retail loyalty program).
+const FINANCIAL_NEWS_DOMAINS =
+  'economictimes.indiatimes.com,moneycontrol.com,livemint.com,business-standard.com,ndtv.com,reuters.com,cnbctv18.com';
+
 async function fetchNewsHeadlines(symbol) {
   try {
-    // Using NewsAPI or similar; for demo, using a placeholder
-    // In production, use NewsAPI: https://newsapi.org/
-    // For now, simulate with Yahoo Finance news or use a free API
-
-    // Example with NewsAPI (requires API key)
     const newsApiKey = process.env.NEWS_API_KEY;
-    const response = await axios.get(`https://newsapi.org/v2/everything?q=${symbol}&apiKey=${newsApiKey}&pageSize=10`);
+    const query = encodeURIComponent(getNewsSearchTerm(symbol));
+    const response = await axios.get(
+      `https://newsapi.org/v2/everything?qInTitle=${query}&domains=${FINANCIAL_NEWS_DOMAINS}&sortBy=publishedAt&apiKey=${newsApiKey}&pageSize=10`
+    );
+    if (!response.data.articles.length) {
+      throw new Error('No relevant headlines found');
+    }
     return response.data.articles.map(article => article.title);
   } catch (error) {
     console.error('Error fetching news:', error);
