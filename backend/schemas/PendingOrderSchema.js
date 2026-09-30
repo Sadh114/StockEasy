@@ -1,6 +1,6 @@
 const { Schema } = require("mongoose");
 
-const TradeSchema = new Schema(
+const PendingOrderSchema = new Schema(
   {
     userId: {
       type: Schema.Types.ObjectId,
@@ -24,36 +24,37 @@ const TradeSchema = new Schema(
       enum: ["BUY", "SELL"],
       required: true,
     },
+    orderCategory: {
+      type: String,
+      enum: ["LIMIT", "STOP_LOSS"],
+      required: true,
+    },
     quantity: {
       type: Number,
       required: true,
       min: 1,
     },
-    price: {
+    triggerPrice: {
       type: Number,
       required: true,
-      min: 0,
+      min: 0.01,
     },
-    total: {
-      type: Number,
-      required: true,
-      min: 0,
+    status: {
+      type: String,
+      enum: ["ACTIVE", "TRIGGERED", "CANCELLED", "FAILED"],
+      default: "ACTIVE",
     },
-    charges: {
-      brokerage: { type: Number, default: 0 },
-      stt: { type: Number, default: 0 },
-      exchangeCharge: { type: Number, default: 0 },
-      sebiCharge: { type: Number, default: 0 },
-      gst: { type: Number, default: 0 },
-      stampDuty: { type: Number, default: 0 },
-      totalCharges: { type: Number, default: 0 },
+    resultingOrderId: {
+      type: Schema.Types.ObjectId,
+      ref: "Orders",
+      default: null,
     },
-    netAmount: {
-      type: Number,
-      default: 0,
+    failureReason: {
+      type: String,
+      default: "",
     },
   },
   { timestamps: true }
 );
 
-module.exports = { TradeSchema };
+module.exports = { PendingOrderSchema };

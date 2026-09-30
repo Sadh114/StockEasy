@@ -39,6 +39,19 @@ const OrdersSchema = new Schema(
       required: true,
       min: 0,
     },
+    charges: {
+      brokerage: { type: Number, default: 0 },
+      stt: { type: Number, default: 0 },
+      exchangeCharge: { type: Number, default: 0 },
+      sebiCharge: { type: Number, default: 0 },
+      gst: { type: Number, default: 0 },
+      stampDuty: { type: Number, default: 0 },
+      totalCharges: { type: Number, default: 0 },
+    },
+    netAmount: {
+      type: Number,
+      default: 0,
+    },
     status: {
       type: String,
       enum: ["PENDING", "EXECUTED", "FAILED"],

@@ -15,10 +15,11 @@ import PortfolioPage from "./trading/PortfolioPage";
 import OrdersPage from "./trading/OrdersPage";
 import FundsPage from "./trading/FundsPage";
 import ProfilePage from "./trading/ProfilePage";
+import WatchlistsPage from "./trading/WatchlistsPage";
 
 const App = () => {
   const location = useLocation();
-  const protectedPaths = ["/dashboard", "/trading", "/portfolio", "/orders", "/funds", "/profile"];
+  const protectedPaths = ["/dashboard", "/trading", "/portfolio", "/orders", "/watchlists", "/funds", "/profile"];
   const isTradingRoute = protectedPaths.some((path) => location.pathname.startsWith(path));
 
   return (
@@ -45,6 +46,7 @@ const App = () => {
           <Route path="trading" element={<TradingPage />} />
           <Route path="portfolio" element={<PortfolioPage />} />
           <Route path="orders" element={<OrdersPage />} />
+          <Route path="watchlists" element={<WatchlistsPage />} />
           <Route path="funds" element={<FundsPage />} />
           <Route path="profile" element={<ProfilePage />} />
         </Route>

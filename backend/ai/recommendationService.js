@@ -1,6 +1,9 @@
-const yahooFinance = require('yahoo-finance2').default;
+const YahooFinance = require('yahoo-finance2').default;
 const axios = require('axios');
 const NodeCache = require('node-cache');
+const { getNewsSearchTerm } = require('../util/marketData');
+
+const yahooFinance = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
 
 // Initialize cache with 15 minutes TTL
 const cache = new NodeCache({ stdTTL: 900 });
@@ -46,10 +49,21 @@ function calculateRSI(prices, period = 14) {
  * @param {string} symbol - Stock symbol
  * @returns {Promise<Array<{title: string, url: string, publishedAt: string}>>} Array of news articles
  */
+// Restricting to established financial-news outlets avoids false matches on
+// short/ambiguous tickers (e.g. "ITC" is also a US retail loyalty program).
+const FINANCIAL_NEWS_DOMAINS =
+  'economictimes.indiatimes.com,moneycontrol.com,livemint.com,business-standard.com,ndtv.com,reuters.com,cnbctv18.com';
+
 async function fetchNewsHeadlines(symbol) {
   try {
     const newsApiKey = process.env.NEWS_API_KEY;
-    const response = await axios.get(`https://newsapi.org/v2/everything?q=${symbol}&apiKey=${newsApiKey}&pageSize=5&sortBy=publishedAt`);
+    const query = encodeURIComponent(getNewsSearchTerm(symbol));
+    const response = await axios.get(
+      `https://newsapi.org/v2/everything?qInTitle=${query}&domains=${FINANCIAL_NEWS_DOMAINS}&apiKey=${newsApiKey}&pageSize=5&sortBy=publishedAt`
+    );
+    if (!response.data.articles.length) {
+      throw new Error('No relevant headlines found');
+    }
     return response.data.articles.map(article => ({
       title: article.title,
       url: article.url,

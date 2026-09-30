@@ -3,6 +3,8 @@ import apiClient from "../api/client";
 
 const money = (value) => `INR ${Number(value || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 
+const API_BASE_URL = apiClient.defaults.baseURL;
+
 const OrdersPage = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -82,8 +84,11 @@ const OrdersPage = () => {
                 <th>Qty</th>
                 <th>Price</th>
                 <th>Total</th>
+                <th>Charges</th>
+                <th>Net Amount</th>
                 <th>Status</th>
                 <th>Time</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -94,8 +99,21 @@ const OrdersPage = () => {
                   <td>{order.quantity}</td>
                   <td>{money(order.price)}</td>
                   <td>{money(order.total)}</td>
+                  <td>{money(order.charges?.totalCharges)}</td>
+                  <td>{money(order.netAmount)}</td>
                   <td>{order.status}</td>
                   <td>{new Date(order.timestamp).toLocaleString()}</td>
+                  <td>
+                    {order.status === "EXECUTED" ? (
+                      <a
+                        href={`${API_BASE_URL}/api/orders/${order.id}/contract-note`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Contract Note
+                      </a>
+                    ) : null}
+                  </td>
                 </tr>
               ))}
             </tbody>

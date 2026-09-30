@@ -1,5 +1,7 @@
-const yahooFinance = require('yahoo-finance2').default;
+const YahooFinance = require('yahoo-finance2').default;
 const NodeCache = require('node-cache');
+
+const yahooFinance = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
 
 // Initialize cache with 1 hour TTL
 const cache = new NodeCache({ stdTTL: 3600 });
